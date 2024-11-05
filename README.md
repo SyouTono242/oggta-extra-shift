@@ -31,3 +31,14 @@ options:
   -l, --headless        Run in headless mode
 ```
 
+## Credential Example
+
+```
+url: <url>
+username: <oggta-username>
+password: <oggta-password>
+sender_email: <sender-email-address>
+sender_password: <sender-email-password>
+receiver_email: <receiver-email-address>
+```
+

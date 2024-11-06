@@ -14,6 +14,8 @@ from plyer import notification
 import smtplib
 from email.mime.text import MIMEText
 
+import config
+
 
 def read_credentials(path: Path) -> dict:
     """Reads the credentials from a file and returns them as a dictionary
@@ -32,6 +34,8 @@ def read_credentials(path: Path) -> dict:
     
     credentials = {}
     for line in lines:
+        if ': ' not in line:
+            raise ValueError('Credentials file must contain key-value pairs separated by ": "')
         key, value = line.split(': ')
         credentials[key.strip().lower()] = value.strip()
     
@@ -129,14 +133,14 @@ def check_shift(session: requests.Session,
     
 
 def send_notification(shift: str, 
-                      config: dict, 
+                      credentials: dict, 
                       desktop: bool, 
                       email: bool):
     """Send desktop or email notification containing info about the extra shift found
 
     Args:
         shift (str): Shift time
-        config (dict): Dictionary containing the configuration for sending notifications
+        credentials (dict): Dictionary containing the configuration for sending notifications
         desktop (bool): Whether to send a desktop notification
         email (bool): Whether to send an email notification
     """
@@ -151,39 +155,36 @@ def send_notification(shift: str,
     if email:
         msg = MIMEText("Extra Shift Available at " + shift)
         msg["Subject"] = "Extra Shift Available"
-        msg["From"] = config["sender_email"]
-        msg["To"] = config["receiver_email"]
+        msg["From"] = credentials["sender_email"]
+        msg["To"] = credentials["receiver_email"]
         
         with smtplib.SMTP_SSL("smtp.zohocloud.ca", 465) as server:
-            server.login(config["sender_email"], config["sender_password"])
-            server.sendmail(config['sender_email'], 
-                            config['receiver_email'], 
+            server.login(credentials["sender_email"], credentials["sender_password"])
+            server.sendmail(credentials['sender_email'], 
+                            credentials['receiver_email'], 
                             msg.as_string())
             
 
-def main():
+def main(credentials: str,
+         max_days: int = 14,
+         frequency: int = 30,
+         desktop_notice: bool = False,
+         email_notice: bool = False,
+         headless: bool = True):
     
-    parser = argparse.ArgumentParser(description='Check for extra shifts in OGGTA')
-    parser.add_argument('credentials', type=str, help='Path to the credentials file')
-    parser.add_argument('--max_days', type=int, default=14, help='Number of days to check for extra shifts')
-    parser.add_argument('--frequency', type=int, default=30, help='Frequency of checking for shifts in minutes')
-    parser.add_argument('-d', '--desktop_notice', action='store_true', help='Send desktop notifications')
-    parser.add_argument('-e', '--email_notice', action='store_true', help='Send email notifications')
-    parser.add_argument('-l', '--headless', action='store_true', help='Run in headless mode')
-    
-    args = parser.parse_args()
+    print(f"Checking for shift in the next {max_days} days...")
     
     # Get credentials from input file 
-    config = read_credentials(Path(args.credentials))
+    credentials = read_credentials(Path(credentials))
     
     # Initialize webdriver and session
-    driver, session, anti_csrf_token = initialize_webdriver(args.headless, config)
+    driver, session, anti_csrf_token = initialize_webdriver(headless, credentials)
     
     try:
-        while True:
+        while config.thread_running:
             print(f"Checking for shifts at {datetime.now()}")
             
-            days_to_check = find_dates(args.max_days)
+            days_to_check = find_dates(max_days)
             found = False
             
             for date in tqdm(days_to_check, desc='Checking shifts', unit='day'):
@@ -192,23 +193,18 @@ def main():
                     found = True
                     for shift in shifts:
                         send_notification(date + " " + str(shift), 
-                                          config = config,
-                                          desktop = args.desktop_notice, 
-                                          email = args.email_notice)
+                                          credentials = credentials,
+                                          desktop = desktop_notice, 
+                                          email = email_notice)
             
             if not found:
-                print(f"No shifts found. Retrying in {args.frequency} minutes.")
+                print(f"No shifts found. Retrying in {frequency} minutes.")
             
-            time.sleep(args.frequency * 60)
-            
-    except KeyboardInterrupt:
-        print("Keyboard interrupt detected. Exiting...")
+            for _ in range(10*60*frequency):
+                if not config.thread_running:
+                    break
+                time.sleep(0.1)
     
     finally:
         # Ensure browser is closed
         driver.quit()
-            
-        
-if __name__ == '__main__':
-    main()
-    

@@ -14,7 +14,7 @@ if os.path.isfile(requirement_path):
 setup(
     name='OGGTA-Extra-Shift',
     version='1.0',
-    packages=['OGGTA-Extra-Shift'],
+    packages=['oggta-extra-shift'],
     license='MIT License',
     long_description=open('README.md').read(),
     install_requires=install_requires,

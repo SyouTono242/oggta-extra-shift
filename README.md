@@ -10,26 +10,8 @@ pip install git+https://github.com/SyouTono242/oggta-extra-shift.git
 ```
 
 ## Usage
+<img src=https://github.com/user-attachments/assets/1716abd1-18e2-40b4-bbdd-5c46ccafa560 width="600"/>
 
-```
-usage: main.py [-h] [--max_days MAX_DAYS] [--frequency FREQUENCY] [-d] [-e]
-               [-l]
-               credentials
-
-Check for extra shifts in OGGTA
-
-positional arguments:
-  credentials           Path to the credentials file
-
-options:
-  -h, --help            show this help message and exit
-  --max_days MAX_DAYS   Number of days to check for extra shifts
-  --frequency FREQUENCY
-                        Frequency of checking for shifts in minutes
-  -d, --desktop_notice  Send desktop notifications
-  -e, --email_notice    Send email notifications
-  -l, --headless        Run in headless mode
-```
 
 ## Credential Example
 

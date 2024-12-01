@@ -14,7 +14,7 @@ from plyer import notification
 import smtplib
 from email.mime.text import MIMEText
 
-import config
+from . import config
 
 
 def read_credentials(path: Path) -> dict:
@@ -165,7 +165,7 @@ def send_notification(shift: str,
                             msg.as_string())
             
 
-def main(credentials: str,
+def main_driver(credentials: str,
          max_days: int = 14,
          frequency: int = 30,
          desktop_notice: bool = False,
@@ -198,7 +198,7 @@ def main(credentials: str,
                                           email = email_notice)
             
             if not found:
-                print(f"No shifts found. Retrying in {frequency} minutes.")
+                print(f"\n\nNo shifts found. Retrying in {frequency} minutes.")
             
             for _ in range(10*60*frequency):
                 if not config.thread_running:
